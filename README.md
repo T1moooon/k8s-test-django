@@ -77,7 +77,7 @@ $ docker compose build web
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
 
 
-## Kubernetes
+## Запуск в Kubernetes(Minikube) + Ingress
 
 Для запуска приложения в Kubernetes необходимо создать файл `k8s/secret.yaml` с секретными данными(`SECRET_KEY`, `DATABASE_URL`).
 
@@ -92,4 +92,13 @@ stringData:
   SECRET_KEY: "REPLACE_ME"
   DATABASE_URL: "REPLACE_ME"
 ```
-2. Применить файл `k8s/secret.yaml` с помощью команды `kubectl apply -f k8s/secret.yaml`.
+2. Собрать образ в Minikube с помощью команды `minikube image build -t django_app:latest .`
+3. Применить манифесты с помощью команд
+```sh
+ kubectl apply -f k8s/deployment.yaml
+ kubectl apply -f k8s/service.yaml
+```
+4. Включить Ingress с помощью команды `minikube addons enable ingress`
+5. Добавить домен star-burger.test в файл `/etc/hosts`
+6. Применить Ingress с помощью команды `kubectl apply -f k8s/ingress.yaml`
+7. Открыть сайт [http://star-burger.test](http://star-burger.test)
