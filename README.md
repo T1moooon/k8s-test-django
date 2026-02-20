@@ -98,7 +98,9 @@ stringData:
  kubectl apply -f k8s/deployment.yaml
  kubectl apply -f k8s/service.yaml
 ```
-4. Включить Ingress с помощью команды `minikube addons enable ingress`
-5. Добавить домен star-burger.test в файл `/etc/hosts`
-6. Применить Ingress с помощью команды `kubectl apply -f k8s/ingress.yaml`
-7. Открыть сайт [http://star-burger.test](http://star-burger.test)
+4. Применить CronJob с помощью команды `kubectl apply -f k8s/clearsessions-cronjob.yaml`
+5. Запустить очистку в ручном режиме с помощью команды `kubectl create job --from=cronjob/django-clearsessions clearsessions-manual`
+6. Включить Ingress с помощью команды `minikube addons enable ingress`
+7. Добавить домен star-burger.test в файл `/etc/hosts`
+8. Применить Ingress с помощью команды `kubectl apply -f k8s/ingress.yaml`
+9. Открыть сайт [http://star-burger.test](http://star-burger.test)
