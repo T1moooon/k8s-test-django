@@ -79,8 +79,6 @@ $ docker compose build web
 
 ## Запуск в Kubernetes(Minikube)
 
-Короткий порядок запуска:
-
 1. Поднять PostgreSQL в Minikube:
 ```bash
 helm upgrade --install my-postgres oci://registry-1.docker.io/bitnamicharts/postgresql -f k8s/postgres-values.yaml
