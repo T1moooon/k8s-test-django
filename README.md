@@ -79,12 +79,17 @@ $ docker compose build web
 
 ## Запуск в Kubernetes(Minikube)
 
-1. Поднять PostgreSQL в Minikube:
+1. Запустить Minikube:
+```bash
+minikube start --driver=virtualbox
+```
+
+2. Поднять PostgreSQL в Minikube:
 ```bash
 helm upgrade --install my-postgres oci://registry-1.docker.io/bitnamicharts/postgresql -f k8s/postgres-values.yaml
 ```
 
-2. Указать доступ к БД в `k8s/secret.yaml`:
+3. Указать доступ к БД в `k8s/secret.yaml`:
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -96,12 +101,12 @@ stringData:
   DATABASE_URL: "postgres://username:password@my-postgres-postgresql:5432/nameDB"
 ```
 
-3. Собрать образ Django внутри Minikube:
+4. Собрать образ Django внутри Minikube:
 ```bash
 minikube image build -t django_app:latest backend_main_django
 ```
 
-4. Применить манифесты приложения:
+5. Применить манифесты приложения:
 ```bash
 kubectl apply -f k8s/secret.yaml
 kubectl apply -f k8s/deployment.yaml
@@ -110,20 +115,19 @@ kubectl apply -f k8s/ingress.yaml
 kubectl apply -f k8s/clearsessions-cronjob.yaml
 ```
 
-5. Выполнить миграции:
+6. Выполнить миграции:
 ```bash
 kubectl delete job django-migrate --ignore-not-found
 kubectl apply -f k8s/migrate-job.yaml
-kubectl logs job/django-migrate -f
 ```
 
-6. Включить Ingress и настроить домен:
+7. Включить Ingress и настроить домен:
 ```bash
 minikube addons enable ingress
 minikube ip
 ```
 
-Добавьте в hosts:
+Добавьте в /etc/hosts:
 ```text
 <MINIKUBE_IP> star-burger.test
 ```
