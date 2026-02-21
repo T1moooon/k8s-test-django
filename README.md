@@ -1,4 +1,4 @@
-# Django Site
+﻿# Django Site
 
 Докеризированный сайт на Django для экспериментов с Kubernetes.
 
@@ -77,11 +77,16 @@ $ docker compose build web
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
 
 
-## Запуск в Kubernetes(Minikube) + Ingress
+## Запуск в Kubernetes(Minikube)
 
-Для запуска приложения в Kubernetes необходимо создать файл `k8s/secret.yaml` с секретными данными(`SECRET_KEY`, `DATABASE_URL`).
+Короткий порядок запуска:
 
-1. Создать файл `k8s/secret.yaml` с секретными данными(`SECRET_KEY`, `DATABASE_URL`).
+1. Поднять PostgreSQL в Minikube:
+```bash
+helm upgrade --install my-postgres oci://registry-1.docker.io/bitnamicharts/postgresql -f k8s/postgres-values.yaml
+```
+
+2. Указать доступ к БД в `k8s/secret.yaml`:
 ```yaml
 apiVersion: v1
 kind: Secret
@@ -90,18 +95,39 @@ metadata:
 type: Opaque
 stringData:
   SECRET_KEY: "REPLACE_ME"
-  DATABASE_URL: "REPLACE_ME"
+  DATABASE_URL: "postgres://username:password@my-postgres-postgresql:5432/nameDB"
 ```
-2. Собрать образ в Minikube с помощью команды `minikube image build -t django_app:latest .`
-3. Применить манифесты с помощью команд
-```sh
- kubectl apply -f k8s/deployment.yaml
- kubectl apply -f k8s/service.yaml
+
+3. Собрать образ Django внутри Minikube:
+```bash
+minikube image build -t django_app:latest backend_main_django
 ```
-4. Применить CronJob с помощью команды `kubectl apply -f k8s/clearsessions-cronjob.yaml`
-5. Запустить очистку в ручном режиме с помощью команды `kubectl create job --from=cronjob/django-clearsessions clearsessions-manual`
-6. Примените миграции с помощью команды `kubectl apply -f k8s/migrate-job.yaml`
-7. Включить Ingress с помощью команды `minikube addons enable ingress`
-8. Добавить домен star-burger.test в файл `/etc/hosts`
-9. Применить Ingress с помощью команды `kubectl apply -f k8s/ingress.yaml`
-10. Открыть сайт [http://star-burger.test](http://star-burger.test)
+
+4. Применить манифесты приложения:
+```bash
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/clearsessions-cronjob.yaml
+```
+
+5. Выполнить миграции:
+```bash
+kubectl delete job django-migrate --ignore-not-found
+kubectl apply -f k8s/migrate-job.yaml
+kubectl logs job/django-migrate -f
+```
+
+6. Включить Ingress и настроить домен:
+```bash
+minikube addons enable ingress
+minikube ip
+```
+
+Добавьте в hosts:
+```text
+<MINIKUBE_IP> star-burger.test
+```
+
+После этого сайт доступен по адресу: [http://star-burger.test](http://star-burger.test)
