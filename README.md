@@ -1,4 +1,4 @@
-# Django Site
+﻿# Django Site
 
 Докеризированный сайт на Django для экспериментов с Kubernetes.
 
@@ -75,3 +75,61 @@ $ docker compose build web
 `ALLOWED_HOSTS` -- настройка Django со списком разрешённых адресов. Если запрос прилетит на другой адрес, то сайт ответит ошибкой 400. Можно перечислить несколько адресов через запятую, например `127.0.0.1,192.168.0.1,site.test`. [Документация Django](https://docs.djangoproject.com/en/3.2/ref/settings/#allowed-hosts).
 
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
+
+
+## Запуск в Kubernetes(Minikube)
+
+1. Запустить Minikube:
+```bash
+minikube start --driver=virtualbox
+```
+
+2. Поднять PostgreSQL в Minikube:
+```bash
+helm upgrade --install my-postgres oci://registry-1.docker.io/bitnamicharts/postgresql -f k8s/postgres-values.yaml
+```
+
+3. Указать доступ к БД в `k8s/secret.yaml`:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: django-secret
+type: Opaque
+stringData:
+  SECRET_KEY: "REPLACE_ME"
+  DATABASE_URL: "postgres://username:password@my-postgres-postgresql:5432/nameDB"
+```
+
+4. Собрать образ Django внутри Minikube:
+```bash
+minikube image build -t django_app:latest backend_main_django
+```
+
+5. Применить манифесты приложения:
+```bash
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+kubectl apply -f k8s/clearsessions-cronjob.yaml
+```
+
+6. Выполнить миграции:
+```bash
+kubectl delete job django-migrate --ignore-not-found
+kubectl apply -f k8s/migrate-job.yaml
+```
+
+7. Включить Ingress и настроить домен:
+```bash
+minikube addons enable ingress
+minikube ip
+```
+
+Добавьте в /etc/hosts:
+```text
+<MINIKUBE_IP> star-burger.test
+```
+
+После этого сайт доступен по адресу: [http://star-burger.test](http://star-burger.test)
