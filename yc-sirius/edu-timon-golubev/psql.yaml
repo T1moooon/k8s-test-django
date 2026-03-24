@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pg-test
+  namespace: edu-timon-golubev
+spec:
+  restartPolicy: Never
+  containers:
+    - name: pg-test
+      image: postgres:15
+      command: ["sleep", "infinity"]
+      envFrom:
+        - secretRef:
+            name: postgres
+      volumeMounts:
+        - name: postgres-cert
+          mountPath: /root/.postgresql
+  volumes:
+    - name: postgres-cert
+      secret:
+        secretName: postgres
+        items:
+          - key: root.crt
+            path: root.crt

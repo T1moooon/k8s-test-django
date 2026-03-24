@@ -133,3 +133,23 @@ minikube ip
 ```
 
 После этого сайт доступен по адресу: [http://star-burger.test](http://star-burger.test)
+
+## Как подготовить dev окружение
+
+Для подключения к управляемой БД PostgreSQL используется Secret `postgres`.
+
+Пример пода с `psql` находится в папке `yc-sirius/edu-timon-golubev`.
+
+Примени манифест:
+
+```bash
+kubectl apply -f yc-sirius/edu-timon-golubev/psql.yaml
+```
+
+Подключись к поду и запусти `psql` (переменные окружения уже заданы):
+
+```bash
+kubectl exec -it pg-test -n edu-timon-golubev -- bash
+# внутри контейнера:
+psql $dsn
+```
