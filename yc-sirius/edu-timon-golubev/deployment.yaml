@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: django
+  namespace: edu-timon-golubev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: django
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      containers:
+        - name: django
+          image: t1moooon/django_site:fa4e62b
+          ports:
+            - name: django-port
+              containerPort: 80
+          env:
+            - name: DEBUG
+              value: "False"
+            - name: ALLOWED_HOSTS
+              value: "*"
+          envFrom:
+            - secretRef:
+                name: django-secret
+          volumeMounts:
+            - name: postgres-cert
+              mountPath: /root/.postgresql
+      volumes:
+        - name: postgres-cert
+          secret:
+            secretName: postgres
+            items:
+              - key: root.crt
+                path: root.crt

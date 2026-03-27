@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-migrate
+  namespace: edu-timon-golubev
+spec:
+  ttlSecondsAfterFinished: 30
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: django-migrate
+          image: t1moooon/django_site:fa4e62b
+          command: ["python", "manage.py", "migrate", "--noinput"]
+          envFrom:
+            - secretRef:
+                name: django-secret
+          volumeMounts:
+            - name: postgres-cert
+              mountPath: /root/.postgresql
+      volumes:
+        - name: postgres-cert
+          secret:
+            secretName: postgres
+            items:
+              - key: root.crt
+                path: root.crt

@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: django-clearsessions
+  namespace: edu-timon-golubev
+spec:
+  schedule: "0 3 1 * *"
+  timeZone: "Europe/Moscow"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 3600
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 3600
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: clearsessions
+              image: t1moooon/django_site:fa4e62b
+              command: ["python", "manage.py", "clearsessions"]
+              envFrom:
+                - secretRef:
+                    name: django-secret
+              volumeMounts:
+                - name: postgres-cert
+                  mountPath: /root/.postgresql
+          volumes:
+            - name: postgres-cert
+              secret:
+                secretName: postgres
+                items:
+                  - key: root.crt
+                    path: root.crt

@@ -1,4 +1,5 @@
 /k8s/secret.yaml
+/yc-sirius/edu-timon-golubev/secret.yaml
 docker-compose.override.yml
 # Byte-compiled / optimized / DLL files
 __pycache__/

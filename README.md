@@ -16,13 +16,13 @@
 
 Запустите базу данных и сайт:
 
-```shell
+```bash
 $ docker compose up
 ```
 
 В новом терминале, не выключая сайт, запустите несколько команд:
 
-```shell
+```bash
 $ docker compose run --rm web ./manage.py migrate  # создаём/обновляем таблицы в БД
 $ docker compose run --rm web ./manage.py createsuperuser  # создаём в БД учётку суперпользователя
 ```
@@ -37,7 +37,7 @@ $ docker compose run --rm web ./manage.py createsuperuser  # создаём в �
 
 Чтобы обновить приложение до последней версии подтяните код из центрального окружения и пересоберите докер-образы:
 
-``` shell
+``` bash
 $ git pull
 $ docker compose build
 ```
@@ -46,7 +46,7 @@ $ docker compose build
 
 Чтобы не гадать заведётся код или нет — запускайте при каждом обновлении команду `migrate`. Если найдутся свежие миграции, то команда их применит:
 
-```shell
+```bash
 $ docker compose run --rm web ./manage.py migrate
 …
 Running migrations:
@@ -76,6 +76,28 @@ $ docker compose build web
 
 `DATABASE_URL` -- адрес для подключения к базе данных PostgreSQL. Другие СУБД сайт не поддерживает. [Формат записи](https://github.com/jacobian/dj-database-url#url-schema).
 
+
+## Сборка и публикация Docker-образа
+
+Авторизация в Docker Hub:
+```bash
+docker login
+```
+
+Сборка образа. Образ версионируется через хэш коммита git:
+```bash
+docker build -t <dockerhub-username>/django_site:$(git rev-parse --short HEAD) ./backend_main_django/
+```
+
+Публикация на Docker Hub:
+```bash
+docker push <dockerhub-username>/django_site:$(git rev-parse --short HEAD)
+```
+
+Скачивание образа:
+```bash
+docker pull <dockerhub-username>/django_site:<тег>
+```
 
 ## Запуск в Kubernetes(Minikube)
 
@@ -133,6 +155,59 @@ minikube ip
 ```
 
 После этого сайт доступен по адресу: [http://star-burger.test](http://star-burger.test)
+
+## Деплой в Yandex Cloud
+
+Манифесты находятся в `yc-sirius/edu-timon-golubev/`.
+
+1. Создать файл `yc-sirius/edu-timon-golubev/secret.yaml`:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: django-secret
+  namespace: edu-timon-golubev
+type: Opaque
+stringData:
+  SECRET_KEY: "REPLACE_ME"
+  DATABASE_URL: "postgres://username:password@my-postgres-postgresql:5432/nameDB"
+```
+
+2. Применить манифесты:
+```bash
+kubectl apply -f yc-sirius/edu-timon-golubev/secret.yaml
+kubectl apply -f yc-sirius/edu-timon-golubev/deployment.yaml
+kubectl apply -f yc-sirius/edu-timon-golubev/service.yaml
+kubectl apply -f yc-sirius/edu-timon-golubev/clearsessions-cronjob.yaml
+```
+
+3. Выполнить миграции:
+```bash
+kubectl delete job django-migrate -n edu-timon-golubev --ignore-not-found
+kubectl apply -f yc-sirius/edu-timon-golubev/migrate-job.yaml
+```
+
+7. Создать суперпользователя (указать пароль в `createsuperuser-job.yaml`):
+```bash
+kubectl delete job django-createsuperuser -n edu-timon-golubev --ignore-not-found
+kubectl apply -f yc-sirius/edu-timon-golubev/createsuperuser-job.yaml
+```
+
+8. Обновить конфиг nginx в ConfigMap `main-nginx-config`, чтобы он проксировал на Django:
+```nginx
+server {
+    listen 80;
+    server_name edu-timon-golubev.yc-sirius-dev.pelid.team;
+    location / {
+        proxy_pass http://django-svc:80;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Сайт доступен по адресу: https://edu-timon-golubev.yc-sirius-dev.pelid.team/
 
 ## Как подготовить dev окружение
 

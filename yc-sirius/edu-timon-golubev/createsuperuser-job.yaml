@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: django-createsuperuser
+  namespace: edu-timon-golubev
+spec:
+  ttlSecondsAfterFinished: 30
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: django-createsuperuser
+          image: t1moooon/django_site:fa4e62b
+          command: ["python", "manage.py", "createsuperuser", "--noinput"]
+          env:
+            - name: DJANGO_SUPERUSER_USERNAME
+              value: "admin"
+            - name: DJANGO_SUPERUSER_EMAIL
+              value: "admin@example.com"
+            - name: DJANGO_SUPERUSER_PASSWORD
+              value: "secret"
+          envFrom:
+            - secretRef:
+                name: django-secret
+          volumeMounts:
+            - name: postgres-cert
+              mountPath: /root/.postgresql
+      volumes:
+        - name: postgres-cert
+          secret:
+            secretName: postgres
+            items:
+              - key: root.crt
+                path: root.crt
